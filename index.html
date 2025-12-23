@@ -1,0 +1,879 @@
+<html lang="fa" dir="rtl"><head><script>window.huggingface={variables:{"SPACE_CREATOR_USER_ID":"67f27b3852e5606fe6d45321"}};</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پینگ پنگ جادویی | Magic Pong</title>
+    
+    <!-- فونت فارسی وزیرمتن -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css">
+    <!-- آیکون&zwnj;ها -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #0f0f13;
+            --text-color: #ffffff;
+            --primary-color: #00f2ff; /* آبی نئونی */
+            --secondary-color: #ff0055; /* قرمز نئونی */
+            --accent-color: #bc13fe; /* بنفش */
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --font-main: 'Vazirmatn', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none; /* جلوگیری از انتخاب متن */
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden; /* جلوگیری از اسکرول */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* هدر */
+        header {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            color: var(--primary-color);
+        }
+
+        .anycoder-link {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            text-decoration: none;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+
+        .anycoder-link:hover {
+            opacity: 1;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        /* کانتینر اصلی بازی */
+        #game-container {
+            position: relative;
+            width: 90%;
+            max-width: 1000px;
+            aspect-ratio: 16/9;
+            background: radial-gradient(circle at center, #1a1a24 0%, #000000 100%);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* لایه رابط کاربری (امتیاز و منو) */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* کلیک&zwnj;ها از روی آن رد شوند مگر روی دکمه&zwnj;ها */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            font-size: 3rem;
+            font-weight: 900;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            z-index: 5;
+        }
+
+        .score-p1 { color: var(--primary-color); }
+        .score-p2 { color: var(--secondary-color); }
+
+        /* منوی بازی (شروع/توقف/پایان) */
+        #menu-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            transition: opacity 0.3s;
+            z-index: 20;
+        }
+
+        #menu-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(188, 19, 254, 0.5);
+        }
+
+        .btn {
+            background: transparent;
+            color: var(--text-color);
+            border: 2px solid var(--primary-color);
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-family: var(--font-main);
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            background: var(--primary-color);
+            color: #000;
+            box-shadow: 0 0 25px var(--primary-color);
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            border-color: var(--secondary-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--secondary-color);
+            box-shadow: 0 0 25px var(--secondary-color);
+        }
+
+        .controls-info {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #aaa;
+            text-align: center;
+            line-height: 1.6;
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .key {
+            display: inline-block;
+            background: #333;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border-bottom: 2px solid #111;
+            margin: 0 3px;
+            font-family: monospace;
+            color: #fff;
+        }
+
+        /* پیام وضعیت */
+        #status-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px var(--accent-color);
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+
+        /* فوتر */
+        footer {
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #666;
+            text-align: center;
+        }
+
+        /* ریسپانسیو برای موبایل */
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .score-board { font-size: 2rem; gap: 30px; }
+            .controls-info { display: none; } /* در موبایل کنترل&zwnj;ها را مخفی کنیم چون تاچ است */
+            #game-container { width: 100%; border-radius: 0; border: none; }
+            .mobile-controls-hint {
+                display: block;
+                color: #aaa;
+                font-size: 0.8rem;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-gamepad"></i>
+            <span>پینگ پنگ جادویی</span>
+        </div>
+        <a href="https://huggingface.co/spaces/akhaliq/anycoder" target="_blank" class="anycoder-link">
+            Built with anycoder <i class="fa-solid fa-external-link-alt" style="font-size: 0.7em;"></i>
+        </a>
+    </header>
+
+    <main id="game-container">
+        <canvas id="gameCanvas" width="740" height="416"></canvas>
+        
+        <div id="ui-layer">
+            <div class="score-board">
+                <span class="score-p1" id="scoreP1">0</span>
+                <span class="score-p2" id="scoreP2">0</span>
+            </div>
+            <div id="status-message"></div>
+        </div>
+
+        <div id="menu-overlay">
+            <h1 id="menu-title">پینگ پنگ جادویی</h1>
+            <p id="winner-text" style="margin-bottom: 20px; font-size: 1.2rem; display: none;"></p>
+            
+            <button class="btn" id="startBtn">
+                <i class="fa-solid fa-play"></i> شروع بازی
+            </button>
+            <button class="btn btn-secondary" id="modeBtn">
+                <i class="fa-solid fa-users"></i> حالت: تک نفره (با هوش مصنوعی)
+            </button>
+
+            <div class="controls-info">
+                <p><strong>بازیکن ۱ (چپ):</strong> <span class="key">W</span> بالا <span class="key">S</span> پایین</p>
+                <p><strong>بازیکن ۲ (راست):</strong> <span class="key">↑</span> بالا <span class="key">↓</span> پایین</p>
+                <p><strong>قابلیت جادویی:</strong> توپ&zwnj;های رنگی قدرت&zwnj;های خاصی دارند!</p>
+            </div>
+        </div>
+    </main>
+
+    <div class="mobile-controls-hint" style="display: none;">
+        برای کنترل در موبایل، صفحه را لمس کنید و بالا و پایین ببرید.
+    </div>
+
+    <footer>
+        طراحی شده با HTML5 Canvas و JavaScript مدرن
+    </footer>
+
+    <script>
+        // --- تنظیمات و متغیرهای بازی ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreP1El = document.getElementById('scoreP1');
+        const scoreP2El = document.getElementById('scoreP2');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const startBtn = document.getElementById('startBtn');
+        const modeBtn = document.getElementById('modeBtn');
+        const menuTitle = document.getElementById('menu-title');
+        const winnerText = document.getElementById('winner-text');
+        const statusMsg = document.getElementById('status-message');
+
+        let animationId;
+        let lastTime = 0;
+        let isGameRunning = false;
+        let isTwoPlayerMode = false; // پیش&zwnj;فرض تک نفره
+
+        // تنظیمات صوتی (سنتزایزر ساده برای جلوگیری از لود فایل)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            
+            if (type === 'hit') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'wall') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(200, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'score') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.linearRampToValueAtTime(1200, now + 0.2);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            } else if (type === 'powerup') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.linearRampToValueAtTime(1600, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        }
+
+        // --- اشیاء بازی ---
+
+        // راکت&zwnj;ها
+        const paddleWidth = 15;
+        const paddleHeight = 100;
+        
+        const player1 = {
+            x: 20,
+            y: 0, // در init تنظیم می&zwnj;شود
+            width: paddleWidth,
+            height: paddleHeight,
+            color: '#00f2ff',
+            score: 0,
+            dy: 0,
+            speed: 8,
+            originalHeight: paddleHeight
+        };
+
+        const player2 = {
+            x: 0, // در init تنظیم می&zwnj;شود
+            y: 0,
+            width: paddleWidth,
+            height: paddleHeight,
+            color: '#ff0055',
+            score: 0,
+            dy: 0,
+            speed: 8,
+            originalHeight: paddleHeight
+        };
+
+        // توپ
+        const ball = {
+            x: 0,
+            y: 0,
+            radius: 8,
+            speed: 7,
+            dx: 7,
+            dy: 7,
+            color: '#ffffff',
+            trail: [] // برای افکت دنباله
+        };
+
+        // سیستم ذرات (Particles)
+        let particles = [];
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.radius = Math.random() * 3 + 1;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 8,
+                    y: (Math.random() - 0.5) * 8
+                };
+                this.alpha = 1;
+                this.decay = Math.random() * 0.03 + 0.01;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+            update() {
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= this.decay;
+            }
+        }
+
+        // قدرت&zwnj;ها (Power-ups)
+        let powerUps = [];
+        let powerUpTimer = 0;
+        const POWERUP_TYPES = [
+            { type: 'bigPaddle', color: '#00ff00', label: 'G' }, // بزرگ کردن راکت
+            { type: 'smallPaddle', color: '#ffff00', label: 'S' }, // کوچک کردن حریف
+            { type: 'fastBall', color: '#ff00ff', label: 'F' } // توپ سریع
+        ];
+
+        class PowerUp {
+            constructor() {
+                this.x = canvas.width / 2;
+                this.y = Math.random() * (canvas.height - 60) + 30;
+                this.radius = 15;
+                const data = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+                this.type = data.type;
+                this.color = data.color;
+                this.label = data.label;
+                this.active = true;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.label, this.x, this.y);
+            }
+        }
+
+        // --- توابع کمکی ---
+
+        function resizeCanvas() {
+            // دریافت ابعاد کانتینر
+            const container = document.getElementById('game-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            // بازنشانی موقعیت&zwnj;ها
+            resetPositions();
+        }
+
+        function resetPositions() {
+            player1.y = canvas.height / 2 - player1.height / 2;
+            player2.x = canvas.width - 20 - paddleWidth;
+            player2.y = canvas.height / 2 - player2.height / 2;
+            
+            resetBall();
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.speed = 7;
+            // جهت تصادفی
+            ball.dx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
+            ball.dy = (Math.random() * 2 - 1) * ball.speed;
+            ball.trail = [];
+        }
+
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 15; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function showMessage(text) {
+            statusMsg.innerText = text;
+            statusMsg.style.opacity = 1;
+            setTimeout(() => {
+                statusMsg.style.opacity = 0;
+            }, 1500);
+        }
+
+        // --- منطق بازی ---
+
+        function update(deltaTime) {
+            if (!isGameRunning) return;
+
+            // حرکت بازیکن ۱
+            player1.y += player1.dy;
+            // محدود کردن به صفحه
+            if (player1.y < 0) player1.y = 0;
+            if (player1.y + player1.height > canvas.height) player1.y = canvas.height - player1.height;
+
+            // حرکت بازیکن ۲ (یا هوش مصنوعی)
+            if (isTwoPlayerMode) {
+                player2.y += player2.dy;
+                if (player2.y < 0) player2.y = 0;
+                if (player2.y + player2.height > canvas.height) player2.y = canvas.height - player2.height;
+            } else {
+                // هوش مصنوعی ساده
+                const targetY = ball.y - player2.height / 2;
+                // واکنش&zwnj;پذیری AI (سرعت کمتر از توپ)
+                const aiSpeed = 5.5; 
+                if (targetY > player2.y + 10) {
+                    player2.y += aiSpeed;
+                } else if (targetY < player2.y - 10) {
+                    player2.y -= aiSpeed;
+                }
+                // محدود کردن
+                if (player2.y < 0) player2.y = 0;
+                if (player2.y + player2.height > canvas.height) player2.y = canvas.height - player2.height;
+            }
+
+            // حرکت توپ
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // برخورد با بالا و پایین
+            if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+                ball.dy *= -1;
+                playSound('wall');
+                // جلوگیری از گیر کردن در دیوار
+                if (ball.y - ball.radius < 0) ball.y = ball.radius + 1;
+                if (ball.y + ball.radius > canvas.height) ball.y = canvas.height - ball.radius - 1;
+            }
+
+            // برخورد با راکت&zwnj;ها
+            let player = (ball.x < canvas.width / 2) ? player1 : player2;
+
+            if (collision(ball, player)) {
+                // نقطه برخورد
+                let collidePoint = (ball.y - (player.y + player.height / 2));
+                // نرمال&zwnj;سازی
+                collidePoint = collidePoint / (player.height / 2);
+
+                // زاویه برخورد (حداکثر 45 درجه)
+                let angleRad = (Math.PI / 4) * collidePoint;
+
+                // جهت جدید
+                let direction = (ball.x < canvas.width / 2) ? 1 : -1;
+
+                // افزایش سرعت با هر برخورد
+                ball.speed += 0.2;
+                if (ball.speed > 16) ball.speed = 16;
+
+                ball.dx = direction * ball.speed * Math.cos(angleRad);
+                ball.dy = ball.speed * Math.sin(angleRad);
+
+                // افکت&zwnj;های صوتی و بصری
+                playSound('hit');
+                createExplosion(ball.x, ball.y, player.color);
+                
+                // تغییر رنگ توپ به رنگ بازیکنی که به آن برخورد کرده
+                ball.color = player.color;
+            }
+
+            // امتیازدهی
+            if (ball.x - ball.radius < 0) {
+                player2.score++;
+                scoreP2El.innerText = player2.score;
+                playSound('score');
+                checkWin();
+                resetBall();
+            } else if (ball.x + ball.radius > canvas.width) {
+                player1.score++;
+                scoreP1El.innerText = player1.score;
+                playSound('score');
+                checkWin();
+                resetBall();
+            }
+
+            // مدیریت ذرات
+            particles.forEach((p, index) => {
+                if (p.alpha <= 0) {
+                    particles.splice(index, 1);
+                } else {
+                    p.update();
+                }
+            });
+
+            // مدیریت قدرت&zwnj;ها
+            handlePowerUps();
+
+            // ذخیره دنباله توپ
+            ball.trail.push({x: ball.x, y: ball.y});
+            if (ball.trail.length > 10) ball.trail.shift();
+        }
+
+        function collision(b, p) {
+            p.top = p.y;
+            p.bottom = p.y + p.height;
+            p.left = p.x;
+            p.right = p.x + p.width;
+
+            b.top = b.y - b.radius;
+            b.bottom = b.y + b.radius;
+            b.left = b.x - b.radius;
+            b.right = b.x + b.radius;
+
+            return p.left < b.right && p.top < b.bottom && p.right > b.left && p.bottom > b.top;
+        }
+
+        function handlePowerUps() {
+            // تولید قدرت
+            powerUpTimer++;
+            if (powerUpTimer > 600) { // هر 10 ثانیه تقریبا
+                if (Math.random() > 0.5) {
+                    powerUps.push(new PowerUp());
+                }
+                powerUpTimer = 0;
+            }
+
+            powerUps.forEach((p, index) => {
+                // برخورد توپ با قدرت
+                const dist = Math.hypot(ball.x - p.x, ball.y - p.y);
+                if (dist < ball.radius + p.radius) {
+                    applyPowerUp(p.type);
+                    playSound('powerup');
+                    createExplosion(p.x, p.y, p.color);
+                    powerUps.splice(index, 1);
+                }
+            });
+        }
+
+        function applyPowerUp(type) {
+            if (type === 'bigPaddle') {
+                // آخرین بازیکنی که توپ را زده بزرگ می&zwnj;شود (تشخیص از روی رنگ توپ)
+                if (ball.color === player1.color) {
+                    player1.height = player1.originalHeight * 1.5;
+                    setTimeout(() => player1.height = player1.originalHeight, 5000);
+                    showMessage("قدرت: راکت بزرگ!");
+                } else {
+                    player2.height = player2.originalHeight * 1.5;
+                    setTimeout(() => player2.height = player2.originalHeight, 5000);
+                    showMessage("قدرت: راکت بزرگ دشمن!");
+                }
+            } else if (type === 'smallPaddle') {
+                // حریف کوچک می&zwnj;شود
+                if (ball.color === player1.color) {
+                    player2.height = player2.originalHeight * 0.6;
+                    setTimeout(() => player2.height = player2.originalHeight, 5000);
+                    showMessage("جادو: کوچک کردن حریف!");
+                } else {
+                    player1.height = player1.originalHeight * 0.6;
+                    setTimeout(() => player1.height = player1.originalHeight, 5000);
+                }
+            } else if (type === 'fastBall') {
+                ball.speed *= 1.5;
+                showMessage("توپ سریع!");
+            }
+        }
+
+        function checkWin() {
+            const winScore = 5;
+            if (player1.score >= winScore) {
+                gameOver("بازیکن ۱ برنده شد! 🎉");
+            } else if (player2.score >= winScore) {
+                gameOver(isTwoPlayerMode ? "بازیکن ۲ برنده شد! 🎉" : "هوش مصنوعی برنده شد! 🤖");
+            }
+        }
+
+        function gameOver(msg) {
+            isGameRunning = false;
+            menuTitle.innerText = "پایان بازی";
+            winnerText.innerText = msg;
+            winnerText.style.display = "block";
+            startBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> بازی مجدد';
+            menuOverlay.classList.remove('hidden');
+        }
+
+        function draw() {
+            // پاک کردن صفحه با شفافیت برای ایجاد رد حرکت (Motion Blur خفیف)
+            ctx.fillStyle = 'rgba(15, 15, 19, 0.4)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // خط وسط
+            ctx.beginPath();
+            ctx.setLineDash([10, 15]);
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // رسم ذرات
+            particles.forEach(p => p.draw());
+
+            // رسم قدرت&zwnj;ها
+            powerUps.forEach(p => p.draw());
+
+            // رسم دنباله توپ
+            ball.trail.forEach((pos, i) => {
+                const ratio = i / ball.trail.length;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, ball.radius * ratio, 0, Math.PI * 2);
+                ctx.fillStyle = ball.color;
+                ctx.globalAlpha = ratio * 0.5;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+
+            // رسم توپ
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = ball.color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = ball.color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // رسم راکت&zwnj;ها
+            drawRect(player1.x, player1.y, player1.width, player1.height, player1.color);
+            drawRect(player2.x, player2.y, player2.width, player2.height, player2.color);
+        }
+
+        function drawRect(x, y, w, h, color) {
+            ctx.fillStyle = color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = color;
+            
+            // گوشه&zwnj;های گرد
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, 5);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            
+            // درخشش داخلی
+            ctx.fillStyle = "rgba(255,255,255,0.2)";
+            ctx.fillRect(x, y, w/2, h);
+        }
+
+        function gameLoop(timestamp) {
+            let deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+
+            update(deltaTime);
+            draw();
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // --- ورودی&zwnj;ها ---
+
+        window.addEventListener('keydown', (e) => {
+            if (!isGameRunning) return;
+            switch(e.key) {
+                case 'w':
+                case 'W':
+                    player1.dy = -player1.speed;
+                    break;
+                case 's':
+                case 'S':
+                    player1.dy = player1.speed;
+                    break;
+                case 'ArrowUp':
+                    if (isTwoPlayerMode) player2.dy = -player2.speed;
+                    break;
+                case 'ArrowDown':
+                    if (isTwoPlayerMode) player2.dy = player2.speed;
+                    break;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            switch(e.key) {
+                case 'w':
+                case 'W':
+                case 's':
+                case 'S':
+                    player1.dy = 0;
+                    break;
+                case 'ArrowUp':
+                case 'ArrowDown':
+                    if (isTwoPlayerMode) player2.dy = 0;
+                    break;
+            }
+        });
+
+        // کنترل لمسی برای موبایل
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isGameRunning) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const relativeY = touch.clientY - rect.top;
+            
+            // بازیکن ۱ با لمس هر جایی کنترل می&zwnj;شود (ساده&zwnj;سازی برای موبایل)
+            player1.y = relativeY - player1.height / 2;
+            
+            // محدود کردن
+            if (player1.y < 0) player1.y = 0;
+            if (player1.y + player1.height > canvas.height) player1.y = canvas.height - player1.height;
+
+        }, { passive: false });
+
+        // دکمه&zwnj;های رابط کاربری
+        startBtn.addEventListener('click', () => {
+            // شروع بازی
+            player1.score = 0;
+            player2.score = 0;
+            scoreP1El.innerText = '0';
+            scoreP2El.innerText = '0';
+            powerUps = [];
+            player1.height = player1.originalHeight;
+            player2.height = player2.originalHeight;
+            
+            menuOverlay.classList.add('hidden');
+            isGameRunning = true;
+            resetPositions();
+            
+            // اگر صدای مرورگر معلق است، آن را فعال کن
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        });
+
+        modeBtn.addEventListener('click', () => {
+            isTwoPlayerMode = !isTwoPlayerMode;
+            if (isTwoPlayerMode) {
+                modeBtn.innerHTML = '<i class="fa-solid fa-user"></i> حالت: دونفره';
+                modeBtn.classList.add('btn-secondary');
+            } else {
+                modeBtn.innerHTML = '<i class="fa-solid fa-robot"></i> حالت: تک نفره (با هوش مصنوعی)';
+                modeBtn.classList.remove('btn-secondary');
+            }
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- شروع اولیه ---
+        resizeCanvas();
+        requestAnimationFrame(gameLoop);
+
+    </script>
+
+</body></html>
